@@ -105,13 +105,13 @@
         }
 
         .hero h1 {
-            font-size: 42px;
+            font-size: 46px;
             margin-bottom: 15px;
             color: white;
         }
 
         .hero p {
-            font-size: 18px;
+            font-size: 20px;
             margin-bottom: 25px;
             max-width: 600px;
             color: #e2e8f0;
@@ -198,7 +198,7 @@
         .trip-card-img-container img { 
             width: 100%; 
             height: 100%; 
-            object-fit: cover; 
+            object-fit: contain; 
         }
 
         .trip-card-content { 
@@ -232,6 +232,7 @@
             gap: 12px;
             border-top: 1px solid #f1f5f9; 
             padding-top: 15px; 
+            direction: rtl;
             margin-top: auto;
         }
 
@@ -311,6 +312,7 @@
             width: 100%;
             max-height: 90vh;
             overflow-y: auto;
+            direction: rtl;
             position: relative;
             box-shadow: 0 10px 30px rgba(0,0,0,0.25);
             animation: fadeIn 0.3s ease;
@@ -494,7 +496,7 @@
 
         .close-lightbox {
             position: absolute;
-            top: 20px; left: 25px;
+            top: 20px; right: 25px;
             color: #f1f5f9;
             font-size: 35px;
             cursor: pointer;
@@ -561,25 +563,25 @@
                 <span class="logo-text">Adelo Camp Life</span>
             </a>
             <ul class="nav-links">
-                <li><a href="#">الرئيسية</a></li>
-                <li><a href="#trips">رحلاتنا</a></li>
-                <li><a href="#contact">تواصل معنا</a></li>
+                <li><a href="#">Accueil</a></li>
+                <li><a href="#trips">Nos Voyages</a></li>
+                <li><a href="#contact">Contactez-nous</a></li>
             </ul>
         </div>
     </header>
 
     <!-- قسم البطولة -->
     <section class="hero">
-        <h1>إبحر في عالم من المغامرات مع Adelo Camplife</h1>
+        <h1>Adelo Camplife  ابحر في عالم من المغامرات مع</h1>
         <p>نقدم لك أفضل العروض السياحية والرحلات المنظمة إلى أجمل الوجهات بأسعار تنافسية</p>
-        <a href="https://www.instagram.com/adelo_camplife_setif/" target="_blank" rel="noopener noreferrer" class="btn-instagram">
-            <i class="fab fa-instagram" style="font-size: 20px;"></i> تابعنا على إنستغرام
+        <a href="https://www.instagram.com/adelo_camplife_setif/" target="_blank" class="btn-instagram">
+            <i class="fab fa-instagram" style="font-size: 20px;"></i> Suivez-Nous
         </a>
     </section>
 
     <!-- قسم العروض والرحلات الديناميكي -->
     <section class="trips-section" id="trips">
-        <h2 class="section-title">رحلاتنا المتاحة</h2>
+        <h2 class="section-title">Nos Voyages</h2>
         <div class="trips-grid" id="mainTripsContainer">
             <!-- جلب الكروت تلقائياً -->
         </div>
@@ -629,7 +631,7 @@
 
                 <div class="form-group">
                     <label><i class="fas fa-phone"></i> رقم الهاتف:</label>
-                    <input type="tel" id="bookCustomerPhone" class="form-control" placeholder="05XXXXXXXX" required pattern="[0-9]{10}" inputmode="numeric">
+                    <input type="tel" id="bookCustomerPhone" class="form-control" placeholder="05XXXXXXXX" required pattern="[0-9]{10}">
                 </div>
 
                 <div class="form-group">
@@ -647,12 +649,12 @@
     <!-- 3️⃣ نافذة الـ Lightbox المكبرة للصور -->
     <div id="imageLightboxOverlay" class="lightbox-overlay" onclick="closeLightbox()">
         <span class="close-lightbox" onclick="closeLightbox()">&times;</span>
-        <img id="lightboxMainImg" class="lightbox-img" src="" alt="صورة الرحلة بحجم كامل" onclick="event.stopPropagation()">
+        <img id="lightboxMainImg" class="lightbox-img" src="" alt="Image pleine taille" onclick="event.stopPropagation()">
     </div>
 
     <!-- قسم الاتصال -->
     <section class="contact-section" id="contact">
-        <h2 style="color: var(--secondary-color); margin-bottom: 10px; font-size: 28px;">تواصل معنا</h2>
+        <h2 style="color: var(--secondary-color); margin-bottom: 10px; font-size: 28px;">Contactez-nous</h2>
         <p style="color: #64748b; font-size: 16px;">هل لديك أي استفسار أو ترغب في التخطيط لرحلتك القادمة؟ نحن هنا لمساعدتك في أي وقت.</p>
         <a href="tel:+213550000000" class="btn-phone">
             <i class="fas fa-phone-alt"></i> اتصل بنا هاتفياً
@@ -661,13 +663,11 @@
 
     <!-- الفوتر -->
     <footer>
-        <p>&copy; 2026 جميع الحقوق محفوظة | Adelo Camplife وكالة السياحة والأسفار</p>
+        <p>&copy; 2026 كل الحقوق محفوظة. Adelo Camplife وكالة السياحة والأسفار</p>
     </footer>
 
-    <!-- JS Logic -->
+    <!-- JS Logic المعدل لربط الحجوزات ولوحة التحكم -->
     <script>
-        const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80';
-
         function getAllTripImages(trip) {
             let imagesArray = [];
             if (trip.images && Array.isArray(trip.images) && trip.images.length > 0) {
@@ -678,7 +678,7 @@
                 imagesArray.push(trip.img);
             }
             if (imagesArray.length === 0) {
-                imagesArray.push(DEFAULT_IMAGE);
+                imagesArray.push('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80');
             }
             return imagesArray;
         }
@@ -764,17 +764,19 @@
                 const coverImage = allImages[0]; 
                 let cleanDesc = (trip.desc || '');
 
+                // تجهيز التواريخ
                 const startDate = trip.date || 'غير محدد';
                 const returnDate = trip.returnDate || 'غير محدد';
 
                 container.innerHTML += `
                     <div class="trip-card">
                         <div class="trip-card-img-container">
-                            <img src="${coverImage}" alt="${trip.title || 'Voyage'}" onerror="this.src='${DEFAULT_IMAGE}'">
+                            <img src="${coverImage}" alt="${trip.title || 'Voyage'}" onerror="this.src='https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80'">
                         </div>
                         <div class="trip-card-content">
                             <h3>${trip.title || 'رحلة مميزة'}</h3>
                             
+                            <!-- 📅 شريط عرض تواريخ الانطلاق والعودة -->
                             <div class="trip-dates-box" style="display: flex; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 6px; margin: 10px 0; border: 1px solid #e2e8f0; font-size: 13px;">
                                 <div style="display: flex; align-items: center; gap: 5px; color: #1e293b;">
                                     <i class="fas fa-plane-departure" style="color: #2563eb;"></i>
@@ -808,15 +810,12 @@
                 document.getElementById('bookingForm').reset();
                 document.getElementById('bookTripTitle').value = trip.title || 'رحلة مميزة';
                 document.getElementById('bookTripDuration').value = getTripDateAndDuration(trip);
-                
                 document.getElementById('bookingModal').style.display = 'flex';
-                document.body.style.overflow = 'hidden';
             }
         }
 
         function closeBookingModal() {
             document.getElementById('bookingModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
         }
 
         function handleBookingSubmit(event) {
@@ -855,7 +854,7 @@
                 allImages.forEach(imgUrl => {
                     galleryContainer.innerHTML += `
                         <div class="modal-gallery-item" onclick="viewRealSizeImage('${imgUrl}')">
-                            <img src="${imgUrl}" onerror="this.src='${DEFAULT_IMAGE}'">
+                            <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80'">
                         </div>
                     `;
                 });
@@ -865,13 +864,7 @@
                 document.getElementById('modalTripDesc').innerHTML = autoFormatDescription(trip.desc);
                 
                 document.getElementById('programDetailsModal').style.display = 'flex';
-                document.body.style.overflow = 'hidden';
             }
-        }
-
-        function closeDetailsModal() {
-            document.getElementById('programDetailsModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
         }
 
         function viewRealSizeImage(url) {
@@ -882,31 +875,23 @@
         }
 
         function closeLightbox() {
-            const lightbox = document.getElementById('imageLightboxOverlay');
-            document.getElementById('lightboxMainImg').src = '';
-            lightbox.style.display = 'none';
+            document.getElementById('imageLightboxOverlay').style.display = 'none';
         }
 
-        // إغلاق النوافذ بالضغط خارجها
+        function closeDetailsModal() {
+            document.getElementById('programDetailsModal').style.display = 'none';
+        }
+
         window.onclick = function(event) {
             const detailsModal = document.getElementById('programDetailsModal');
             const bookingModal = document.getElementById('bookingModal');
-            if (event.target === detailsModal) {
-                closeDetailsModal();
+            if (event.target == detailsModal) {
+                detailsModal.style.display = 'none';
             }
-            if (event.target === bookingModal) {
-                closeBookingModal();
+            if (event.target == bookingModal) {
+                bookingModal.style.display = 'none';
             }
         }
-
-        // إغلاق النوافذ عند الضغط على Esc
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeDetailsModal();
-                closeBookingModal();
-                closeLightbox();
-            }
-        });
 
         // تحديث البيانات تلقائياً عند تحميل الصفحة وتغيير التخزين
         window.onload = loadLiveTrips;

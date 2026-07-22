@@ -645,10 +645,10 @@
         }
     });
 
-    function logoutAdmin() {
+    window.logoutAdmin = function() {
         sessionStorage.removeItem('isAdminLoggedIn');
         checkLoginState();
-    }
+    };
 
     // --- معالجة وضغط الصور ---
     document.getElementById('tripImages')?.addEventListener('change', async function(e) {
@@ -806,7 +806,7 @@
                     <td>${trip.date || trip.startDate || '-'}</td>
                     <td>${trip.returnDate || trip.endDate || '-'}</td>
                     <td>
-                        <button class="btn-action btn-delete" onclick="deleteTrip('${trip.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                        <button type="button" class="btn-action btn-delete" onclick="deleteTrip('${trip.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
                     </td>
                 </tr>
             `;
@@ -850,8 +850,8 @@
                         <td>${order.tripTitle || '-'}</td>
                         <td>${order.duration || '-'}</td>
                         <td class="btn-action-col">
-                            <button class="btn-action btn-approve" onclick="changeOrderStatus('${order.id}', 'confirmed')">تأكيد الحجز</button>
-                            <button class="btn-action btn-delete" onclick="deleteOrder('${order.id}')">حذف</button>
+                            <button type="button" class="btn-action btn-approve" onclick="changeOrderStatus('${order.id}', 'confirmed')">تأكيد الحجز</button>
+                            <button type="button" class="btn-action btn-delete" onclick="deleteOrder('${order.id}')">حذف</button>
                         </td>
                     </tr>
                 `;
@@ -872,7 +872,7 @@
                         <td><span class="status-badge status-confirmed"><i class="fas fa-check"></i> ${order.tripTitle || '-'}</span></td>
                         <td>${order.duration || '-'}</td>
                         <td class="btn-action-col">
-                            <button class="btn-action btn-delete" onclick="deleteOrder('${order.id}')">إلغاء</button>
+                            <button type="button" class="btn-action btn-delete" onclick="deleteOrder('${order.id}')">إلغاء</button>
                         </td>
                     </tr>
                 `;
@@ -913,31 +913,31 @@
             });
     });
 
-    // --- حذف رحلات وتغيير حالة الطلبات مع Firebase ---
-    function deleteTrip(tripId) {
+    // --- ربط أزرار الحذف وتغيير الحالة بنطاق Window المباشر مع Firebase ---
+    window.deleteTrip = function(tripId) {
         if (!tripId) return;
         if (confirm('هل أنت متأكد من حذف هذه الرحلة نهائياً؟')) {
             database.ref('trips/' + tripId).remove()
             .then(() => console.log("تم حذف الرحلة بنجاح"))
             .catch(err => alert("خطأ في الحذف: " + err.message));
         }
-    }
+    };
 
-    function changeOrderStatus(orderId, newStatus) {
+    window.changeOrderStatus = function(orderId, newStatus) {
         if (!orderId) return;
         database.ref('orders/' + orderId).update({ status: newStatus })
         .then(() => console.log("تم تحديث الحالة بنجاح"))
         .catch(err => alert("خطأ في التحديث: " + err.message));
-    }
+    };
 
-    function deleteOrder(orderId) {
+    window.deleteOrder = function(orderId) {
         if (!orderId) return;
         if (confirm('هل تريد مسح هذا السجل نهائياً؟')) {
             database.ref('orders/' + orderId).remove()
             .then(() => console.log("تم حذف الطلب بنجاح"))
             .catch(err => alert("خطأ في الحذف: " + err.message));
         }
-    }
+    };
 
     // --- إعدادات الحساب ---
     document.getElementById('accountSettingsForm')?.addEventListener('submit', function(e) {
@@ -955,7 +955,7 @@
     });
 
     // --- طباعة الجداول ---
-    function printTable(areaId, title) {
+    window.printTable = function(areaId, title) {
         const printContent = document.getElementById(areaId).innerHTML;
         const printWindow = window.open('', '', 'height=600,width=800');
 
@@ -985,7 +985,7 @@
             printWindow.print();
             printWindow.close();
         }, 500);
-    }
+    };
 
     // --- عند تحميل الصفحة ---
     document.addEventListener("DOMContentLoaded", function() {

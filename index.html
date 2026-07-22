@@ -900,50 +900,70 @@
                 loadLiveTrips();
             }
         });
-    </script><!-- 1. استدعاء مكتبات Firebase -->
+
+        </script><!-- 1. استدعاء مكتبات Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-<script>
-  // 2. إعداد الاتصال بقاعدة البيانات
+        
+    <script>
   const firebaseConfig = {
     databaseURL: "https://adelo-camplife19-default-rtdb.europe-west1.firebasedatabase.app"
   };
 
-  firebase.initializeApp(firebaseConfig);
+  // 1. التأكد من تهيئة الفايربيس بأمان
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
   const database = firebase.database();
 
-  // 3. ربط الحاوية المحددة في السطر 585
   const container = document.getElementById('mainTripsContainer');
   const tripsRef = database.ref('trips');
 
-  // الاستماع المباشر للتغييرات
+  // 2. الاستماع للبيانات
   tripsRef.on('value', (snapshot) => {
-    const data = snapshot.val();
-    container.innerHTML = ''; // تفريغ النص التلقائي
+    try {
+      const data = snapshot.val();
+      
+      if (!container) {
+        console.error("لم يتم العثور على العنصر mainTripsContainer في الصفحة!");
+        return;
+      }
 
-    if (!data) {
-      container.innerHTML = '<p style="text-align: center; width: 100%;">لا توجد رحلات متاحة حالياً.</p>';
-      return;
+      container.innerHTML = ''; 
+
+      if (!data) {
+        container.innerHTML = '<p style="text-align: center; width: 100%;">لا توجد رحلات متاحة حالياً.</p>';
+        return;
+      }
+
+      // تحويل الكائنات بأمان عالي للهواتف
+      Object.keys(data).forEach((key) => {
+        const trip = data[key] || {};
+
+        // حماية الخانات من أن تكون undefined على الهاتف
+        const title = trip.title ? trip.title : 'رحلة سياحية';
+        const price = trip.price ? trip.price : '0';
+        const startDate = trip.startDate ? trip.startDate : '--';
+        const endDate = trip.endDate ? trip.endDate : '--';
+        const description = trip.description ? trip.description : '';
+
+        const tripCard = `
+          <div class="trip-card" id="${key}">
+            <h3>${title}</h3>
+            <p class="price">السعر: <strong>${price} DA</strong></p>
+            <p class="dates">📅 من: ${startDate} | إلى: ${endDate}</p>
+            <p class="desc">${description}</p>
+          </div>
+        `;
+
+        container.innerHTML += tripCard;
+      });
+    } catch (err) {
+      console.error("حدث خطأ في عرض الرحلات على الهاتف: ", err);
     }
-
-    // عرض كل رحلة تم إضافتها سحابياً
-    Object.keys(data).forEach((key) => {
-      const trip = data[key];
-
-      const tripCard = `
-        <div class="trip-card" id="${key}">
-          <h3>${trip.title || 'رحلة بدون عنوان'}</h3>
-          <p class="price">السعر: <strong>${trip.price || '0'} DA</strong></p>
-          <p class="dates">📅 من: ${trip.startDate || '--'} | إلى: ${trip.endDate || '--'}</p>
-          <p class="desc">${trip.description || ''}</p>
-        </div>
-      `;
-
-      container.innerHTML += tripCard;
-    });
   }, (error) => {
-    console.error("خطأ في جلب الرحلات: ", error);
+    console.error("خطأ الاتصال بـ Firebase: ", error);
   });
 </script>
 

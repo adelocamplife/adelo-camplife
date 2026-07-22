@@ -813,14 +813,15 @@
         });
     }
 
+    // --- عرض وتوليد جدول الطلبات والحجوزات بأمان مع Firebase ---
     function renderOrdersTables() {
         const pendingBody = document.getElementById('pendingOrdersTableBody');
         const confirmedBody = document.getElementById('confirmedOrdersTableBody');
 
         if (!pendingBody || !confirmedBody) return;
 
-        const pendingFilter = document.getElementById('pendingFilterSelect').value;
-        const confirmedFilter = document.getElementById('confirmedFilterSelect').value;
+        const pendingFilter = document.getElementById('pendingFilterSelect') ? document.getElementById('pendingFilterSelect').value : 'all';
+        const confirmedFilter = document.getElementById('confirmedFilterSelect') ? document.getElementById('confirmedFilterSelect').value : 'all';
 
         pendingBody.innerHTML = '';
         confirmedBody.innerHTML = '';
@@ -835,6 +836,7 @@
             confirmedOrders = confirmedOrders.filter(o => o.tripTitle === confirmedFilter);
         }
 
+        // 1. جدول طلبات الحجوزات الواردة (في الانتظار)
         if (pendingOrders.length === 0) {
             pendingBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد طلبات معلقة.</td></tr>`;
         } else {
@@ -856,6 +858,7 @@
             });
         }
 
+        // 2. جدول الحجوزات المؤكدة
         if (confirmedOrders.length === 0) {
             confirmedBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد حجوزات مؤكدة.</td></tr>`;
         } else {
@@ -910,20 +913,29 @@
             });
     });
 
-    // --- حذف ورحلات وتغيير الطلبات ---
+    // --- حذف رحلات وتغيير حالة الطلبات مع Firebase ---
     function deleteTrip(tripId) {
+        if (!tripId) return;
         if (confirm('هل أنت متأكد من حذف هذه الرحلة نهائياً؟')) {
-            database.ref('trips/' + tripId).remove();
+            database.ref('trips/' + tripId).remove()
+            .then(() => console.log("تم حذف الرحلة بنجاح"))
+            .catch(err => alert("خطأ في الحذف: " + err.message));
         }
     }
 
     function changeOrderStatus(orderId, newStatus) {
-        database.ref('orders/' + orderId).update({ status: newStatus });
+        if (!orderId) return;
+        database.ref('orders/' + orderId).update({ status: newStatus })
+        .then(() => console.log("تم تحديث الحالة بنجاح"))
+        .catch(err => alert("خطأ في التحديث: " + err.message));
     }
 
     function deleteOrder(orderId) {
+        if (!orderId) return;
         if (confirm('هل تريد مسح هذا السجل نهائياً؟')) {
-            database.ref('orders/' + orderId).remove();
+            database.ref('orders/' + orderId).remove()
+            .then(() => console.log("تم حذف الطلب بنجاح"))
+            .catch(err => alert("خطأ في الحذف: " + err.message));
         }
     }
 

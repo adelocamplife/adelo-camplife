@@ -969,5 +969,36 @@
             }
         });
     </script>
+
+    <!-- استدعاء Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+  // إعدادات مشروعك من Firebase
+  const firebaseConfig = {
+    databaseURL: "https://adelo-camplife19-default-rtdb.europe-west1.firebasedatabase.app"
+  };
+
+  // تهيئة الفايربيس
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+
+  // دالة إرسال الرحلة الجديدة عند الضغط على زر "نشر"
+  function saveTrip(title, price, startDate, endDate, description) {
+    database.ref('trips').push({
+      title: title,
+      price: price,
+      startDate: startDate,
+      endDate: endDate,
+      description: description,
+      createdAt: Date.now()
+    }).then(() => {
+      alert("تم نشر الرحلة بنجاح سحابياً!");
+    }).catch((error) => {
+      console.error("خطأ في الحفظ: ", error);
+    });
+  }
+</script>
 </body>
 </html>

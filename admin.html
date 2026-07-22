@@ -599,406 +599,395 @@
 
     </div>
 
-    <script>
-        let trips = JSON.parse(localStorage.getItem('myTrips')) || [];
-        let orders = JSON.parse(localStorage.getItem('myOrders')) || [
-            { 
-                id: 1, 
-                name: "عمر أحمد", 
-                phone: "0550123456", 
-                dob: "1995-05-12",
-                idCard: "123456789",
-                tripTitle: "رحلة شواطئ القالة وسكيكدة", 
-                duration: "5 أيام / 4 ليالي",
-                status: "pending" 
-            },
-            { 
-                id: 2, 
-                name: "كريم بن علي", 
-                phone: "0661987654", 
-                dob: "1988-10-20",
-                idCard: "987654321",
-                tripTitle: "رحلة شواطئ القالة وسكيكدة", 
-                duration: "5 أيام / 4 ليالي",
-                status: "confirmed" 
-            }
-        ];
-        
-        let adminAccount = JSON.parse(localStorage.getItem('adminAccount')) || { username: "admin", password: "123" };
-        let uploadedImagesBase64 = []; 
+    <!-- 1. استدعاء مكتبات Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-        function checkLoginState() {
-            const isLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
-            const overlay = document.getElementById('loginOverlay');
-            if (isLoggedIn === 'true') {
-                overlay.style.display = 'none';
-            } else {
-                overlay.style.display = 'flex';
-            }
+<script>
+    // 2. تهيئة Firebase Realtime Database
+    const firebaseConfig = {
+        databaseURL: "https://adelo-camplife19-default-rtdb.europe-west1.firebasedatabase.app"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const database = firebase.database();
+
+    // المتغيرات العامة
+    let trips = [];
+    let orders = [];
+    let adminAccount = JSON.parse(localStorage.getItem('adminAccount')) || { username: "admin", password: "123" };
+    let uploadedImagesBase64 = [];
+
+    // --- إدارة تسجيل الدخول ---
+    function checkLoginState() {
+        const isLoggedIn = sessionStorage.getItem('isAdminLoggedIn');
+        const overlay = document.getElementById('loginOverlay');
+        if (overlay) {
+            overlay.style.display = (isLoggedIn === 'true') ? 'none' : 'flex';
         }
+    }
 
-        document.getElementById('inlineLoginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const userIn = document.getElementById('loginUsername').value.trim();
-            const passIn = document.getElementById('loginPassword').value.trim();
-            const errorMsg = document.getElementById('loginErrorMsg');
+    document.getElementById('inlineLoginForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const userIn = document.getElementById('loginUsername').value.trim();
+        const passIn = document.getElementById('loginPassword').value.trim();
+        const errorMsg = document.getElementById('loginErrorMsg');
 
-            if (userIn === adminAccount.username && passIn === adminAccount.password) {
-                sessionStorage.setItem('isAdminLoggedIn', 'true');
-                errorMsg.style.display = 'none';
-                this.reset();
-                checkLoginState();
-            } else {
-                errorMsg.style.display = 'block';
-            }
-        });
-
-        function logoutAdmin() {
-            sessionStorage.removeItem('isAdminLoggedIn');
+        if (userIn === adminAccount.username && passIn === adminAccount.password) {
+            sessionStorage.setItem('isAdminLoggedIn', 'true');
+            if (errorMsg) errorMsg.style.display = 'none';
+            this.reset();
             checkLoginState();
+        } else {
+            if (errorMsg) errorMsg.style.display = 'block';
         }
+    });
 
-        // معالجة وضغط الصور
-        document.getElementById('tripImages').addEventListener('change', async function(e) {
-            const previewContainer = document.getElementById('imagesPreview');
-            const statusLabel = document.getElementById('uploadStatus');
-            previewContainer.innerHTML = '';
-            uploadedImagesBase64 = []; 
+    function logoutAdmin() {
+        sessionStorage.removeItem('isAdminLoggedIn');
+        checkLoginState();
+    }
 
-            const files = Array.from(e.target.files);
-            if(files.length === 0) return;
+    // --- معالجة وضغط الصور ---
+    document.getElementById('tripImages')?.addEventListener('change', async function(e) {
+        const previewContainer = document.getElementById('imagesPreview');
+        const statusLabel = document.getElementById('uploadStatus');
+        previewContainer.innerHTML = '';
+        uploadedImagesBase64 = [];
 
-            statusLabel.innerText = "جاري معالجة وضغط الصور... ⏳";
-            statusLabel.style.color = "var(--primary-color)";
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
 
-            for (let file of files) {
-                try {
-                    const compressedBase64 = await compressImage(file, 800, 600);
-                    uploadedImagesBase64.push(compressedBase64);
-                    
-                    const item = document.createElement('div');
-                    item.className = 'image-preview-item';
-                    item.innerHTML = `<img src="${compressedBase64}">`;
-                    previewContainer.appendChild(item);
-                } catch (err) {
-                    console.error("خطأ في معالجة الملف:", err);
-                }
+        statusLabel.innerText = "جاري معالجة وضغط الصور... ⏳";
+        statusLabel.style.color = "var(--primary-color)";
+
+        for (let file of files) {
+            try {
+                const compressedBase64 = await compressImage(file, 800, 600);
+                uploadedImagesBase64.push(compressedBase64);
+
+                const item = document.createElement('div');
+                item.className = 'image-preview-item';
+                item.innerHTML = `<img src="${compressedBase64}">`;
+                previewContainer.appendChild(item);
+            } catch (err) {
+                console.error("خطأ في معالجة الملف:", err);
             }
-            statusLabel.innerText = "جاهز للنشر! ✅";
-            statusLabel.style.color = "#10b981";
+        }
+        statusLabel.innerText = "جاهز للنشر! ✅";
+        statusLabel.style.color = "#10b981";
+    });
+
+    function compressImage(file, maxWidth, maxHeight) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // ضغط الصورة بقدر 60% لتوفير المساحة
+                    resolve(dataUrl);
+                };
+            };
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    // --- المزامنة اللحظية مع Firebase Realtime Database ---
+    function listenToFirebaseData() {
+        // 1. الاستماع للرحلات
+        database.ref('trips').on('value', (snapshot) => {
+            trips = [];
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    trips.push({ id: key, ...data[key] });
+                });
+            }
+            updateDashboardUI();
         });
 
-        // دالة ضغط الصور
-        function compressImage(file, maxWidth, maxHeight) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = function(event) {
-                    const img = new Image();
-                    img.src = event.target.result;
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                            if (width > maxWidth) {
-                                height *= maxWidth / width;
-                                width = maxWidth;
-                            }
-                        } else {
-                            if (height > maxHeight) {
-                                width *= maxHeight / height;
-                                height = maxHeight;
-                            }
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        resolve(dataUrl);
-                    };
-                };
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        function updateDashboard() {
-            try {
-                localStorage.setItem('myTrips', JSON.stringify(trips));
-                localStorage.setItem('myOrders', JSON.stringify(orders));
-                localStorage.setItem('adminAccount', JSON.stringify(adminAccount));
-            } catch (error) {
-                alert("تنبيه: مساحة المتصفح ممتلئة بالكامل. يرجى حذف بعض الرحلات القديمة أولاً.");
+        // 2. الاستماع للطلبات / الحجوزات
+        database.ref('orders').on('value', (snapshot) => {
+            orders = [];
+            const data = snapshot.val();
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    orders.push({ id: key, ...data[key] });
+                });
             }
+            updateDashboardUI();
+        });
+    }
 
-            document.getElementById('totalTripsCount').innerText = trips.length;
-            document.getElementById('totalRequestsCount').innerText = orders.filter(o => o.status === 'pending').length;
-            document.getElementById('adminDisplayUsername').innerText = adminAccount.username;
-            document.getElementById('settingsUsername').value = adminAccount.username;
+    // --- تحديث الواجهة واللوحة ---
+    function updateDashboardUI() {
+        const totalTripsEl = document.getElementById('totalTripsCount');
+        const totalRequestsEl = document.getElementById('totalRequestsCount');
+        const adminDisplayEl = document.getElementById('adminDisplayUsername');
+        const settingsUserEl = document.getElementById('settingsUsername');
 
-            populateFilterDropdowns();
-            renderTripsTable();
-            renderOrdersTables();
+        if (totalTripsEl) totalTripsEl.innerText = trips.length;
+        if (totalRequestsEl) totalRequestsEl.innerText = orders.filter(o => o.status === 'pending').length;
+        if (adminDisplayEl) adminDisplayEl.innerText = adminAccount.username;
+        if (settingsUserEl) settingsUserEl.value = adminAccount.username;
+
+        populateFilterDropdowns();
+        renderTripsTable();
+        renderOrdersTables();
+    }
+
+    function populateFilterDropdowns() {
+        const pendingSelect = document.getElementById('pendingFilterSelect');
+        const confirmedSelect = document.getElementById('confirmedFilterSelect');
+
+        if (!pendingSelect || !confirmedSelect) return;
+
+        const currentPendingVal = pendingSelect.value;
+        const currentConfirmedVal = confirmedSelect.value;
+
+        const uniqueTrips = new Set();
+        trips.forEach(t => uniqueTrips.add(t.title));
+        orders.forEach(o => { if (o.tripTitle) uniqueTrips.add(o.tripTitle); });
+
+        let optionsHTML = '<option value="all">عرض جميع الرحلات</option>';
+        uniqueTrips.forEach(tripName => {
+            optionsHTML += `<option value="${tripName}">${tripName}</option>`;
+        });
+
+        pendingSelect.innerHTML = optionsHTML;
+        confirmedSelect.innerHTML = optionsHTML;
+
+        pendingSelect.value = currentPendingVal || "all";
+        confirmedSelect.value = currentConfirmedVal || "all";
+    }
+
+    function renderTripsTable() {
+        const tbody = document.getElementById('tripsTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = '';
+        if (trips.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8;">لا توجد رحلات منشورة حالياً.</td></tr>`;
+            return;
         }
 
-        function populateFilterDropdowns() {
-            const pendingSelect = document.getElementById('pendingFilterSelect');
-            const confirmedSelect = document.getElementById('confirmedFilterSelect');
-            
-            const currentPendingVal = pendingSelect.value;
-            const currentConfirmedVal = confirmedSelect.value;
+        trips.forEach((trip) => {
+            const imgCount = trip.images ? trip.images.length : (trip.image ? 1 : 0);
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${trip.title || '-'}</strong></td>
+                    <td><span style="background:#e2e8f0; padding:3px 8px; border-radius:5px; font-weight:bold;">${imgCount} صور</span></td>
+                    <td style="color:var(--primary-color); font-weight:bold;">${trip.price || '-'}</td>
+                    <td>${trip.date || trip.startDate || '-'}</td>
+                    <td>${trip.returnDate || trip.endDate || '-'}</td>
+                    <td>
+                        <button class="btn-action btn-delete" onclick="deleteTrip('${trip.id}')"><i class="fas fa-trash-alt"></i> حذف</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
 
-            const uniqueTrips = new Set();
-            trips.forEach(t => uniqueTrips.add(t.title));
-            orders.forEach(o => { if(o.tripTitle) uniqueTrips.add(o.tripTitle); });
+    function renderOrdersTables() {
+        const pendingBody = document.getElementById('pendingOrdersTableBody');
+        const confirmedBody = document.getElementById('confirmedOrdersTableBody');
 
-            let optionsHTML = '<option value="all">عرض جميع الرحلات</option>';
-            uniqueTrips.forEach(tripName => {
-                optionsHTML += `<option value="${tripName}">${tripName}</option>`;
-            });
+        if (!pendingBody || !confirmedBody) return;
 
-            pendingSelect.innerHTML = optionsHTML;
-            confirmedSelect.innerHTML = optionsHTML;
+        const pendingFilter = document.getElementById('pendingFilterSelect').value;
+        const confirmedFilter = document.getElementById('confirmedFilterSelect').value;
 
-            pendingSelect.value = currentPendingVal || "all";
-            confirmedSelect.value = currentConfirmedVal || "all";
+        pendingBody.innerHTML = '';
+        confirmedBody.innerHTML = '';
+
+        let pendingOrders = orders.filter(o => o.status === 'pending');
+        if (pendingFilter !== 'all') {
+            pendingOrders = pendingOrders.filter(o => o.tripTitle === pendingFilter);
         }
 
-        function renderTripsTable() {
-            const tbody = document.getElementById('tripsTableBody');
-            tbody.innerHTML = '';
-            if(trips.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#94a3b8;">لا توجد رحلات منشورة حالياً.</td></tr>`;
-                return;
-            }
-            trips.forEach((trip, index) => {
-                const imgCount = trip.images ? trip.images.length : (trip.image ? 1 : 0);
-                tbody.innerHTML += `
+        let confirmedOrders = orders.filter(o => o.status === 'confirmed');
+        if (confirmedFilter !== 'all') {
+            confirmedOrders = confirmedOrders.filter(o => o.tripTitle === confirmedFilter);
+        }
+
+        if (pendingOrders.length === 0) {
+            pendingBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد طلبات معلقة.</td></tr>`;
+        } else {
+            pendingOrders.forEach(order => {
+                pendingBody.innerHTML += `
                     <tr>
-                        <td><strong>${trip.title}</strong></td>
-                        <td><span style="background:#e2e8f0; padding:3px 8px; border-radius:5px; font-weight:bold;">${imgCount} صور</span></td>
-                        <td style="color:var(--primary-color); font-weight:bold;">${trip.price}</td>
-                        <td>${trip.date || '-'}</td>
-                        <td>${trip.returnDate || '-'}</td>
-                        <td>
-                            <button class="btn-action btn-delete" onclick="deleteTrip(${index})"><i class="fas fa-trash-alt"></i> حذف</button>
+                        <td>${order.name || '-'}</td>
+                        <td>${order.phone || '-'}</td>
+                        <td>${order.dob || '-'}</td>
+                        <td>${order.idCard || '-'}</td>
+                        <td>${order.tripTitle || '-'}</td>
+                        <td>${order.duration || '-'}</td>
+                        <td class="btn-action-col">
+                            <button class="btn-action btn-approve" onclick="changeOrderStatus('${order.id}', 'confirmed')">تأكيد الحجز</button>
+                            <button class="btn-action btn-delete" onclick="deleteOrder('${order.id}')">حذف</button>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        function renderOrdersTables() {
-            const pendingBody = document.getElementById('pendingOrdersTableBody');
-            const confirmedBody = document.getElementById('confirmedOrdersTableBody');
-            
-            const pendingFilter = document.getElementById('pendingFilterSelect').value;
-            const confirmedFilter = document.getElementById('confirmedFilterSelect').value;
+        if (confirmedOrders.length === 0) {
+            confirmedBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد حجوزات مؤكدة.</td></tr>`;
+        } else {
+            confirmedOrders.forEach(order => {
+                confirmedBody.innerHTML += `
+                    <tr>
+                        <td>${order.name || '-'}</td>
+                        <td>${order.phone || '-'}</td>
+                        <td>${order.dob || '-'}</td>
+                        <td>${order.idCard || '-'}</td>
+                        <td><span class="status-badge status-confirmed"><i class="fas fa-check"></i> ${order.tripTitle || '-'}</span></td>
+                        <td>${order.duration || '-'}</td>
+                        <td class="btn-action-col">
+                            <button class="btn-action btn-delete" onclick="deleteOrder('${order.id}')">إلغاء</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+    }
 
-            pendingBody.innerHTML = '';
-            confirmedBody.innerHTML = '';
+    // --- نشر رحلة جديدة إلى Firebase ---
+    document.getElementById('addTripForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-            let pendingOrders = orders.filter(o => o.status === 'pending');
-            if (pendingFilter !== 'all') {
-                pendingOrders = pendingOrders.filter(o => o.tripTitle === pendingFilter);
-            }
-
-            let confirmedOrders = orders.filter(o => o.status === 'confirmed');
-            if (confirmedFilter !== 'all') {
-                confirmedOrders = confirmedOrders.filter(o => o.tripTitle === confirmedFilter);
-            }
-
-            if(pendingOrders.length === 0) {
-                pendingBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد طلبات.</td></tr>`;
-            } else {
-                pendingOrders.forEach(order => {
-                    pendingBody.innerHTML += `
-                        <tr>
-                            <td>${order.name || '-'}</td>
-                            <td>${order.phone || '-'}</td>
-                            <td>${order.dob || '-'}</td>
-                            <td>${order.idCard || '-'}</td>
-                            <td>${order.tripTitle || '-'}</td>
-                            <td>${order.duration || '-'}</td>
-                            <td class="btn-action-col">
-                                <button class="btn-action btn-approve" onclick="changeOrderStatus(${order.id}, 'confirmed')">تأكيد الحجز</button>
-                                <button class="btn-action btn-delete" onclick="deleteOrder(${order.id})">حذف</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
-
-            if(confirmedOrders.length === 0) {
-                confirmedBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8;">لا توجد حجوزات.</td></tr>`;
-            } else {
-                confirmedOrders.forEach(order => {
-                    confirmedBody.innerHTML += `
-                        <tr>
-                            <td>${order.name || '-'}</td>
-                            <td>${order.phone || '-'}</td>
-                            <td>${order.dob || '-'}</td>
-                            <td>${order.idCard || '-'}</td>
-                            <td><span class="status-badge status-confirmed"><i class="fas fa-check"></i> ${order.tripTitle || '-'}</span></td>
-                            <td>${order.duration || '-'}</td>
-                            <td class="btn-action-col">
-                                <button class="btn-action btn-delete" onclick="deleteOrder(${order.id})">إلغاء</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            }
+        if (uploadedImagesBase64.length === 0) {
+            alert('الرجاء رفع صورة واحدة على الأقل والانتظار لحين معالجتها.');
+            return;
         }
 
-        function printTable(areaId, title) {
-            const printContent = document.getElementById(areaId).innerHTML;
-            const printWindow = window.open('', '', 'height=600,width=800');
+        const newTrip = {
+            title: document.getElementById('tripTitle').value,
+            price: document.getElementById('tripPrice').value,
+            date: document.getElementById('tripDate').value,
+            returnDate: document.getElementById('tripReturnDate').value,
+            images: [...uploadedImagesBase64],
+            desc: document.getElementById('tripDesc').value,
+            createdAt: Date.now()
+        };
 
-            printWindow.document.write(`
-                <html lang="ar" dir="rtl">
-                <head>
-                    <title>${title}</title>
-                    <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; direction: rtl; }
-                        h2 { text-align: center; color: #2b3a2a; margin-bottom: 20px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: right; font-size: 12px; }
-                        th { background-color: #f8fafc; }
-                        .btn-action-col, .btn-action { display: none !important; }
-                    </style>
-                </head>
-                <body>
-                    <h2>Adelo Camplife - ${title}</h2>
-                    ${printContent}
-                </body>
-                </html>
-            `);
+        // حفظ في Firebase السحابي
+        database.ref('trips').push(newTrip)
+            .then(() => {
+                alert('تم نشر الرحلة بنجاح سحابياً! ستظهر فوراً على جميع الهواتف والحواسيب 🎉');
+                this.reset();
+                document.getElementById('imagesPreview').innerHTML = '';
+                document.getElementById('uploadStatus').innerText = '';
+                uploadedImagesBase64 = [];
+            })
+            .catch((err) => {
+                alert('حدث خطأ أثناء النشر: ' + err.message);
+            });
+    });
 
-            printWindow.document.close();
-            printWindow.focus();
-            setTimeout(() => {
-                printWindow.print();
-                printWindow.close();
-            }, 500);
+    // --- حذف ورحلات وتغيير الطلبات ---
+    function deleteTrip(tripId) {
+        if (confirm('هل أنت متأكد من حذف هذه الرحلة نهائياً؟')) {
+            database.ref('trips/' + tripId).remove();
         }
+    }
 
-        // نشر رحلة جديدة مع تاريخ الانطلاق والعودة
-        document.getElementById('addTripForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            if (uploadedImagesBase64.length === 0) {
-                alert('الرجاء الانتظار ثانية واحدة حتى ينتهي ضغط ومعاينة الصور.');
-                return;
-            }
+    function changeOrderStatus(orderId, newStatus) {
+        database.ref('orders/' + orderId).update({ status: newStatus });
+    }
 
-            const newTrip = {
-                title: document.getElementById('tripTitle').value,
-                price: document.getElementById('tripPrice').value,
-                date: document.getElementById('tripDate').value,
-                returnDate: document.getElementById('tripReturnDate').value,
-                images: [...uploadedImagesBase64], 
-                desc: document.getElementById('tripDesc').value
-            };
-            
-            trips.push(newTrip);
-            updateDashboard();
-            this.reset();
-            document.getElementById('imagesPreview').innerHTML = ''; 
-            document.getElementById('uploadStatus').innerText = '';
-            uploadedImagesBase64 = []; 
-            alert('تم النشر وتحديث لوحة التحكم بنجاح! 🎉');
-        });
-
-        document.getElementById('accountSettingsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const newUsername = document.getElementById('settingsUsername').value.trim();
-            const newPass = document.getElementById('settingsNewPassword').value.trim();
-
-            if(newUsername) adminAccount.username = newUsername;
-            if(newPass) adminAccount.password = newPass;
-
-            updateDashboard();
-            document.getElementById('settingsNewPassword').value = ''; 
-            alert('تم تحديث إعدادات حساب المسؤول بنجاح!');
-        });
-
-        function deleteTrip(index) {
-            if(confirm('هل أنت متأكد من حذف هذه الرحلة؟')) {
-                trips.splice(index, 1);
-                updateDashboard();
-            }
+    function deleteOrder(orderId) {
+        if (confirm('هل تريد مسح هذا السجل نهائياً؟')) {
+            database.ref('orders/' + orderId).remove();
         }
+    }
 
-        function changeOrderStatus(id, newStatus) {
-            const order = orders.find(o => o.id === id);
-            if(order) {
-                order.status = newStatus;
-                updateDashboard();
-            }
-        }
+    // --- إعدادات الحساب ---
+    document.getElementById('accountSettingsForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const newUsername = document.getElementById('settingsUsername').value.trim();
+        const newPass = document.getElementById('settingsNewPassword').value.trim();
 
-        function deleteOrder(id) {
-            if(confirm('هل تريد مسح هذا السجل؟')) {
-                orders = orders.filter(o => o.id !== id);
-                updateDashboard();
-            }
-        }
+        if (newUsername) adminAccount.username = newUsername;
+        if (newPass) adminAccount.password = newPass;
 
-        document.addEventListener("DOMContentLoaded", function() {
-            checkLoginState();
-            updateDashboard();
-            
-            document.querySelectorAll('.sidebar-menu a').forEach(anchor => {
-                anchor.addEventListener('click', function(e) {
-                    if(this.getAttribute('onclick')) return;
-                    document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
-                    this.parentElement.classList.add('active');
-                });
+        localStorage.setItem('adminAccount', JSON.stringify(adminAccount));
+        updateDashboardUI();
+        document.getElementById('settingsNewPassword').value = '';
+        alert('تم تحديث إعدادات حساب المسؤول بنجاح!');
+    });
+
+    // --- طباعة الجداول ---
+    function printTable(areaId, title) {
+        const printContent = document.getElementById(areaId).innerHTML;
+        const printWindow = window.open('', '', 'height=600,width=800');
+
+        printWindow.document.write(`
+            <html lang="ar" dir="rtl">
+            <head>
+                <title>${title}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; direction: rtl; }
+                    h2 { text-align: center; color: #2b3a2a; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: right; font-size: 12px; }
+                    th { background-color: #f8fafc; }
+                    .btn-action-col, .btn-action { display: none !important; }
+                </style>
+            </head>
+            <body>
+                <h2>Adelo Camplife - ${title}</h2>
+                ${printContent}
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500);
+    }
+
+    // --- عند تحميل الصفحة ---
+    document.addEventListener("DOMContentLoaded", function() {
+        checkLoginState();
+        listenToFirebaseData(); // بدأت المزامنة المباشرة مع الفايربيس
+
+        document.querySelectorAll('.sidebar-menu a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                if (this.getAttribute('onclick')) return;
+                document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
+                this.parentElement.classList.add('active');
             });
         });
-
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'myOrders' || e.key === 'myTrips') {
-                orders = JSON.parse(localStorage.getItem('myOrders')) || [];
-                trips = JSON.parse(localStorage.getItem('myTrips')) || [];
-                updateDashboard();
-            }
-        });
-    </script>
-
-    <!-- استدعاء Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-<script>
-  // إعدادات مشروعك من Firebase
-  const firebaseConfig = {
-    databaseURL: "https://adelo-camplife19-default-rtdb.europe-west1.firebasedatabase.app"
-  };
-
-  // تهيئة الفايربيس
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-
-  // دالة إرسال الرحلة الجديدة عند الضغط على زر "نشر"
-  function saveTrip(title, price, startDate, endDate, description) {
-    database.ref('trips').push({
-      title: title,
-      price: price,
-      startDate: startDate,
-      endDate: endDate,
-      description: description,
-      createdAt: Date.now()
-    }).then(() => {
-      alert("تم نشر الرحلة بنجاح سحابياً!");
-    }).catch((error) => {
-      console.error("خطأ في الحفظ: ", error);
     });
-  }
 </script>
 </body>
 </html>

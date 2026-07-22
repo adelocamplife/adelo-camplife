@@ -666,306 +666,266 @@
         <p>&copy; 2026 كل الحقوق محفوظة. Adelo Camplife وكالة السياحة والأسفار</p>
     </footer>
 
-    <!-- JS Logic المعدل لربط الحجوزات ولوحة التحكم -->
-    <script>
-        function getAllTripImages(trip) {
-            let imagesArray = [];
-            if (trip.images && Array.isArray(trip.images) && trip.images.length > 0) {
-                imagesArray = trip.images;
-            } else if (trip.image) {
-                imagesArray.push(trip.image);
-            } else if (trip.img) {
-                imagesArray.push(trip.img);
-            }
-            if (imagesArray.length === 0) {
-                imagesArray.push('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80');
-            }
-            return imagesArray;
-        }
-
-        function getTripDateAndDuration(trip) {
-            let dateStr = trip.date || '';
-            let returnDateStr = trip.returnDate || '';
-            let durationStr = trip.duration || '';
-
-            if (dateStr && returnDateStr) {
-                return `من ${dateStr} إلى ${returnDateStr}`;
-            } else if (dateStr) {
-                return `الانطلاق: ${dateStr}`;
-            } else if (durationStr) {
-                return durationStr;
-            }
-            return "محددة في برنامج الرحلة";
-        }
-
-        function autoFormatDescription(text) {
-            if (!text) return 'لا توجد تفاصيل إضافية مسجلة.';
-            
-            let lines = text.split('\n');
-            let processedLines = [];
-
-            lines.forEach(line => {
-                let trimmedLine = line.trim();
-                if (trimmedLine === "") {
-                    processedLines.push("<br>");
-                    return;
-                }
-
-                const customHighlights = [
-                    { keys: ["معلومات الرحلة والتجمع", "معلومات الرحلة", "التجمع"], icon: "fa-map-marked-alt" },
-                    { keys: ["التكلفة", "السعر", "سعر الرحلة"], icon: "fa-wallet" },
-                    { keys: ["برنامج الرحلة", "البرنامج", "جدول الرحلة"], icon: "fa-calendar-alt" },
-                    { keys: ["المستلزمات المطلوبة", "وش تجيب معاك", "المستلزمات"], icon: "fa-suitcase-rolling" },
-                    { keys: ["معلومات الحجز", "طريقة الحجز", "الحجز"], icon: "fa-credit-card" },
-                    { keys: ["تنبيه", "ملاحظة", "هام", "الانطلاق", "شروط", "ملاحظه"], icon: "fa-bullhorn" }
-                ];
-
-                let matchedIcon = null;
-
-                for (let item of customHighlights) {
-                    let matchFound = item.keys.some(key => {
-                        return trimmedLine.startsWith(key) || 
-                               trimmedLine.indexOf(key) === 0 || 
-                               trimmedLine.replace(/[:\/ \-]/g, '').startsWith(key.replace(/[:\/ \-]/g, ''));
-                    });
-
-                    if (matchFound) {
-                        matchedIcon = item.icon;
-                        break;
-                    }
-                }
-
-                if (!matchedIcon && (trimmedLine.includes("🔴") || trimmedLine.includes("⚠️"))) {
-                    matchedIcon = "fa-bullhorn";
-                }
-
-                if (matchedIcon) {
-                    processedLines.push(`<div class="program-highlight-box"><i class="fas ${matchedIcon}" style="color: var(--accent-color); margin-left:8px;"></i> ${trimmedLine}</div>`);
-                } else {
-                    processedLines.push(trimmedLine + "<br>");
-                }
-            });
-
-            return processedLines.join('');
-        }
-
-        function loadLiveTrips() {
-            const container = document.getElementById('mainTripsContainer');
-            const savedTrips = JSON.parse(localStorage.getItem('myTrips')) || [];
-
-            if (savedTrips.length === 0) {
-                container.innerHTML = '<div class="no-trips" style="grid-column: 1/-1; text-align:center; padding: 40px; color: #64748b;">انتظروا عروضنا المميزة قريباً!</div>';
-                return;
-            }
-
-            container.innerHTML = '';
-            savedTrips.forEach((trip, index) => {
-                const allImages = getAllTripImages(trip);
-                const coverImage = allImages[0]; 
-                let cleanDesc = (trip.desc || '');
-
-                // تجهيز التواريخ
-                const startDate = trip.date || 'غير محدد';
-                const returnDate = trip.returnDate || 'غير محدد';
-
-                container.innerHTML += `
-                    <div class="trip-card">
-                        <div class="trip-card-img-container">
-                            <img src="${coverImage}" alt="${trip.title || 'Voyage'}" onerror="this.src='https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80'">
-                        </div>
-                        <div class="trip-card-content">
-                            <h3>${trip.title || 'رحلة مميزة'}</h3>
-                            
-                            <!-- 📅 شريط عرض تواريخ الانطلاق والعودة -->
-                            <div class="trip-dates-box" style="display: flex; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 6px; margin: 10px 0; border: 1px solid #e2e8f0; font-size: 13px;">
-                                <div style="display: flex; align-items: center; gap: 5px; color: #1e293b;">
-                                    <i class="fas fa-plane-departure" style="color: #2563eb;"></i>
-                                    <span><strong>الانطلاق:</strong> ${startDate}</span>
-                                </div>
-                                <div style="display: flex; align-items: center; gap: 5px; color: #1e293b;">
-                                    <i class="fas fa-plane-arrival" style="color: #16a34a;"></i>
-                                    <span><strong>العودة:</strong> ${returnDate}</span>
-                                </div>
-                            </div>
-
-                            <p>${cleanDesc}</p>
-                            <div class="trip-card-footer">
-                                <span class="trip-price">${trip.price || ''}</span>
-                                <div class="action-buttons">
-                                    <button class="btn-book" onclick="openBookingModal(${index})">احجز الآن</button>
-                                    <button class="btn-details" onclick="openDetailsModal(${index})">تفاصيل البرنامج</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function openBookingModal(index) {
-            const savedTrips = JSON.parse(localStorage.getItem('myTrips')) || [];
-            const trip = savedTrips[index];
-
-            if (trip) {
-                document.getElementById('bookingForm').reset();
-                document.getElementById('bookTripTitle').value = trip.title || 'رحلة مميزة';
-                document.getElementById('bookTripDuration').value = getTripDateAndDuration(trip);
-                document.getElementById('bookingModal').style.display = 'flex';
-            }
-        }
-
-        function closeBookingModal() {
-            document.getElementById('bookingModal').style.display = 'none';
-        }
-
-        function handleBookingSubmit(event) {
-            event.preventDefault();
-
-            const newOrder = {
-                id: Date.now(),
-                name: document.getElementById('bookCustomerName').value.trim(),
-                phone: document.getElementById('bookCustomerPhone').value.trim(),
-                dob: document.getElementById('bookCustomerDOB').value,
-                idCard: document.getElementById('bookCustomerId').value.trim(),
-                tripTitle: document.getElementById('bookTripTitle').value,
-                duration: document.getElementById('bookTripDuration').value,
-                status: 'pending'
-            };
-
-            let currentOrders = JSON.parse(localStorage.getItem('myOrders')) || [];
-            currentOrders.push(newOrder);
-            localStorage.setItem('myOrders', JSON.stringify(currentOrders));
-
-            closeBookingModal();
-            document.getElementById('bookingForm').reset();
-            
-            alert('✅ شكراً لك! تم إرسال طلب الحجز بنجاح وسنقوم بالتواصل معك لتأكيده.');
-        }
-
-        function openDetailsModal(index) {
-            const savedTrips = JSON.parse(localStorage.getItem('myTrips')) || [];
-            const trip = savedTrips[index];
-            
-            if (trip) {
-                const galleryContainer = document.getElementById('modalGalleryContainer');
-                galleryContainer.innerHTML = ''; 
-                
-                const allImages = getAllTripImages(trip);
-                allImages.forEach(imgUrl => {
-                    galleryContainer.innerHTML += `
-                        <div class="modal-gallery-item" onclick="viewRealSizeImage('${imgUrl}')">
-                            <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80'">
-                        </div>
-                    `;
-                });
-                
-                document.getElementById('modalTripTitle').innerText = trip.title || 'تفاصيل الرحلة';
-                document.getElementById('modalTripPrice').innerText = "السعر: " + (trip.price || '');
-                document.getElementById('modalTripDesc').innerHTML = autoFormatDescription(trip.desc);
-                
-                document.getElementById('programDetailsModal').style.display = 'flex';
-            }
-        }
-
-        function viewRealSizeImage(url) {
-            const lightbox = document.getElementById('imageLightboxOverlay');
-            const lightboxImg = document.getElementById('lightboxMainImg');
-            lightboxImg.src = url;
-            lightbox.style.display = 'flex';
-        }
-
-        function closeLightbox() {
-            document.getElementById('imageLightboxOverlay').style.display = 'none';
-        }
-
-        function closeDetailsModal() {
-            document.getElementById('programDetailsModal').style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            const detailsModal = document.getElementById('programDetailsModal');
-            const bookingModal = document.getElementById('bookingModal');
-            if (event.target == detailsModal) {
-                detailsModal.style.display = 'none';
-            }
-            if (event.target == bookingModal) {
-                bookingModal.style.display = 'none';
-            }
-        }
-
-        // تحديث البيانات تلقائياً عند تحميل الصفحة وتغيير التخزين
-        window.onload = loadLiveTrips;
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'myTrips') {
-                loadLiveTrips();
-            }
-        });
-
-        </script><!-- 1. استدعاء مكتبات Firebase -->
+   <!-- 1. استدعاء مكتبات Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-        
-    <script>
-  const firebaseConfig = {
-    databaseURL: "https://adelo-camplife19-default-rtdb.europe-west1.firebasedatabase.app"
-  };
+<script>
+    // متغير عام لتخزين الرحلات المجلوبة من Firebase لاستخدامها في النوافذ المنبثقة
+    window.currentFirebaseTrips = [];
 
-  // 1. التأكد من تهيئة الفايربيس بأمان
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
-  const database = firebase.database();
+    // 1. تهيئة Firebase
+    const firebaseConfig = {
+        databaseURL: "https://adelo-camplife19-default-rtdb.europe-west1.firebasedatabase.app"
+    };
 
-  const container = document.getElementById('mainTripsContainer');
-  const tripsRef = database.ref('trips');
-
-  // 2. الاستماع للبيانات
-  tripsRef.on('value', (snapshot) => {
-    try {
-      const data = snapshot.val();
-      
-      if (!container) {
-        console.error("لم يتم العثور على العنصر mainTripsContainer في الصفحة!");
-        return;
-      }
-
-      container.innerHTML = ''; 
-
-      if (!data) {
-        container.innerHTML = '<p style="text-align: center; width: 100%;">لا توجد رحلات متاحة حالياً.</p>';
-        return;
-      }
-
-      // تحويل الكائنات بأمان عالي للهواتف
-      Object.keys(data).forEach((key) => {
-        const trip = data[key] || {};
-
-        // حماية الخانات من أن تكون undefined على الهاتف
-        const title = trip.title ? trip.title : 'رحلة سياحية';
-        const price = trip.price ? trip.price : '0';
-        const startDate = trip.startDate ? trip.startDate : '--';
-        const endDate = trip.endDate ? trip.endDate : '--';
-        const description = trip.description ? trip.description : '';
-
-        const tripCard = `
-          <div class="trip-card" id="${key}">
-            <h3>${title}</h3>
-            <p class="price">السعر: <strong>${price} DA</strong></p>
-            <p class="dates">📅 من: ${startDate} | إلى: ${endDate}</p>
-            <p class="desc">${description}</p>
-          </div>
-        `;
-
-        container.innerHTML += tripCard;
-      });
-    } catch (err) {
-      console.error("حدث خطأ في عرض الرحلات على الهاتف: ", err);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
     }
-  }, (error) => {
-    console.error("خطأ الاتصال بـ Firebase: ", error);
-  });
-</script>
+    const database = firebase.database();
 
+    // 2. دالّة معالجة الصور
+    function getAllTripImages(trip) {
+        let imagesArray = [];
+        if (trip.images && Array.isArray(trip.images) && trip.images.length > 0) {
+            imagesArray = trip.images;
+        } else if (trip.image) {
+            imagesArray.push(trip.image);
+        } else if (trip.img) {
+            imagesArray.push(trip.img);
+        }
+        if (imagesArray.length === 0) {
+            imagesArray.push('https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80');
+        }
+        return imagesArray;
+    }
+
+    // 3. دالّة تنسيق الوصف
+    function autoFormatDescription(text) {
+        if (!text) return 'لا توجد تفاصيل إضافية مسجلة.';
+        
+        let lines = text.split('\n');
+        let processedLines = [];
+
+        lines.forEach(line => {
+            let trimmedLine = line.trim();
+            if (trimmedLine === "") {
+                processedLines.push("<br>");
+                return;
+            }
+
+            const customHighlights = [
+                { keys: ["معلومات الرحلة والتجمع", "معلومات الرحلة", "التجمع"], icon: "fa-map-marked-alt" },
+                { keys: ["التكلفة", "السعر", "سعر الرحلة"], icon: "fa-wallet" },
+                { keys: ["برنامج الرحلة", "البرنامج", "جدول الرحلة"], icon: "fa-calendar-alt" },
+                { keys: ["المستلزمات المطلوبة", "وش تجيب معاك", "المستلزمات"], icon: "fa-suitcase-rolling" },
+                { keys: ["معلومات الحجز", "طريقة الحجز", "الحجز"], icon: "fa-credit-card" },
+                { keys: ["تنبيه", "ملاحظة", "هام", "الانطلاق", "شروط", "ملاحظه"], icon: "fa-bullhorn" }
+            ];
+
+            let matchedIcon = null;
+
+            for (let item of customHighlights) {
+                let matchFound = item.keys.some(key => {
+                    return trimmedLine.startsWith(key) || 
+                           trimmedLine.indexOf(key) === 0 || 
+                           trimmedLine.replace(/[:\/ \-]/g, '').startsWith(key.replace(/[:\/ \-]/g, ''));
+                });
+
+                if (matchFound) {
+                    matchedIcon = item.icon;
+                    break;
+                }
+            }
+
+            if (!matchedIcon && (trimmedLine.includes("🔴") || trimmedLine.includes("⚠️"))) {
+                matchedIcon = "fa-bullhorn";
+            }
+
+            if (matchedIcon) {
+                processedLines.push(`<div class="program-highlight-box"><i class="fas ${matchedIcon}" style="color: var(--accent-color); margin-left:8px;"></i> ${trimmedLine}</div>`);
+            } else {
+                processedLines.push(trimmedLine + "<br>");
+            }
+        });
+
+        return processedLines.join('');
+    }
+
+    // 4. جلب الرحلات الحية من Firebase
+    function initFirebaseTripsListener() {
+        const container = document.getElementById('mainTripsContainer');
+        if (!container) return;
+
+        const tripsRef = database.ref('trips');
+
+        tripsRef.on('value', (snapshot) => {
+            try {
+                const data = snapshot.val();
+                container.innerHTML = '';
+                window.currentFirebaseTrips = [];
+
+                if (!data) {
+                    container.innerHTML = '<div class="no-trips" style="grid-column: 1/-1; text-align:center; padding: 40px; color: #64748b;">انتظروا عروضنا المميزة قريباً!</div>';
+                    return;
+                }
+
+                // تحويل الكائنات إلى مصفوفة ودعم الهواتف بأمان
+                Object.keys(data).forEach((key, index) => {
+                    const trip = data[key] || {};
+                    window.currentFirebaseTrips.push(trip);
+
+                    const allImages = getAllTripImages(trip);
+                    const coverImage = allImages[0];
+                    const cleanDesc = trip.desc || trip.description || '';
+
+                    const startDate = trip.startDate || trip.date || 'غير محدد';
+                    const returnDate = trip.endDate || trip.returnDate || 'غير محدد';
+                    const title = trip.title || 'رحلة مميزة';
+                    const price = trip.price || '';
+
+                    const cardHTML = `
+                        <div class="trip-card" id="${key}">
+                            <div class="trip-card-img-container">
+                                <img src="${coverImage}" alt="${title}" onerror="this.src='https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80'">
+                            </div>
+                            <div class="trip-card-content">
+                                <h3>${title}</h3>
+                                
+                                <div class="trip-dates-box" style="display: flex; justify-content: space-between; background: #f8fafc; padding: 8px 12px; border-radius: 6px; margin: 10px 0; border: 1px solid #e2e8f0; font-size: 13px;">
+                                    <div style="display: flex; align-items: center; gap: 5px; color: #1e293b;">
+                                        <i class="fas fa-plane-departure" style="color: #2563eb;"></i>
+                                        <span><strong>الانطلاق:</strong> ${startDate}</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 5px; color: #1e293b;">
+                                        <i class="fas fa-plane-arrival" style="color: #16a34a;"></i>
+                                        <span><strong>العودة:</strong> ${returnDate}</span>
+                                    </div>
+                                </div>
+
+                                <p>${cleanDesc}</p>
+                                <div class="trip-card-footer">
+                                    <span class="trip-price">${price}</span>
+                                    <div class="action-buttons">
+                                        <button class="btn-book" onclick="openBookingModal(${index})">احجز الآن</button>
+                                        <button class="btn-details" onclick="openDetailsModal(${index})">تفاصيل البرنامج</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    container.innerHTML += cardHTML;
+                });
+            } catch (err) {
+                console.error("خطأ معالجة الرحلات:", err);
+            }
+        }, (error) => {
+            console.error("خطأ الاتصال بـ Firebase:", error);
+        });
+    }
+
+    // 5. دوال النوافذ المنبثقة والحجز (مربوطة بالبيانات السحابية الحية)
+    function openBookingModal(index) {
+        const trip = window.currentFirebaseTrips[index];
+        if (trip) {
+            document.getElementById('bookingForm').reset();
+            document.getElementById('bookTripTitle').value = trip.title || 'رحلة مميزة';
+            
+            const startDate = trip.startDate || trip.date || '';
+            const returnDate = trip.endDate || trip.returnDate || '';
+            let durationText = 'محددة في برنامج الرحلة';
+            if (startDate && returnDate) durationText = `من ${startDate} إلى ${returnDate}`;
+            else if (startDate) durationText = `الانطلاق: ${startDate}`;
+
+            document.getElementById('bookTripDuration').value = durationText;
+            document.getElementById('bookingModal').style.display = 'flex';
+        }
+    }
+
+    function closeBookingModal() {
+        document.getElementById('bookingModal').style.display = 'none';
+    }
+
+    function handleBookingSubmit(event) {
+        event.preventDefault();
+
+        const newOrder = {
+            id: Date.now(),
+            name: document.getElementById('bookCustomerName').value.trim(),
+            phone: document.getElementById('bookCustomerPhone').value.trim(),
+            dob: document.getElementById('bookCustomerDOB').value,
+            idCard: document.getElementById('bookCustomerId').value.trim(),
+            tripTitle: document.getElementById('bookTripTitle').value,
+            duration: document.getElementById('bookTripDuration').value,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+        };
+
+        // حفظ الحجز في Firebase لقراءة الطلبات من لوحة التحكم سحابياً
+        database.ref('orders').push(newOrder).then(() => {
+            closeBookingModal();
+            document.getElementById('bookingForm').reset();
+            alert('✅ شكراً لك! تم إرسال طلب الحجز بنجاح وسنقوم بالتواصل معك لتأكيده.');
+        }).catch((err) => {
+            alert('حدث خطأ أثناء إرسال الحجز، يرجى المحاولة لاحقاً.');
+            console.error(err);
+        });
+    }
+
+    function openDetailsModal(index) {
+        const trip = window.currentFirebaseTrips[index];
+        
+        if (trip) {
+            const galleryContainer = document.getElementById('modalGalleryContainer');
+            galleryContainer.innerHTML = ''; 
+            
+            const allImages = getAllTripImages(trip);
+            allImages.forEach(imgUrl => {
+                galleryContainer.innerHTML += `
+                    <div class="modal-gallery-item" onclick="viewRealSizeImage('${imgUrl}')">
+                        <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=500&q=80'">
+                    </div>
+                `;
+            });
+            
+            document.getElementById('modalTripTitle').innerText = trip.title || 'تفاصيل الرحلة';
+            document.getElementById('modalTripPrice').innerText = "السعر: " + (trip.price || '');
+            document.getElementById('modalTripDesc').innerHTML = autoFormatDescription(trip.desc || trip.description);
+            
+            document.getElementById('programDetailsModal').style.display = 'flex';
+        }
+    }
+
+    function viewRealSizeImage(url) {
+        const lightbox = document.getElementById('imageLightboxOverlay');
+        const lightboxImg = document.getElementById('lightboxMainImg');
+        lightboxImg.src = url;
+        lightbox.style.display = 'flex';
+    }
+
+    function closeLightbox() {
+        document.getElementById('imageLightboxOverlay').style.display = 'none';
+    }
+
+    function closeDetailsModal() {
+        document.getElementById('programDetailsModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const detailsModal = document.getElementById('programDetailsModal');
+        const bookingModal = document.getElementById('bookingModal');
+        if (event.target == detailsModal) {
+            detailsModal.style.display = 'none';
+        }
+        if (event.target == bookingModal) {
+            bookingModal.style.display = 'none';
+        }
+    }
+
+    // تشغيل جلب الرحلات الحية فور تجهيز DOM
+    document.addEventListener('DOMContentLoaded', initFirebaseTripsListener);
+</script>
+    
 </body>
 </html>
